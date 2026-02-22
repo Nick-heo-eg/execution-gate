@@ -1,4 +1,4 @@
-from firewall import Firewall, enforce, BlockedByFirewall
+from gate import Firewall, enforce, BlockedByFirewall
 
 
 fw = Firewall(

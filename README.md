@@ -14,7 +14,7 @@ This library enforces deterministic ALLOW/BLOCK decisions before any side-effect
 git clone https://github.com/Nick-heo-eg/execution-gate.git
 cd execution-gate
 pip install -e .
-firewall-demo
+gate-demo
 ```
 
 You'll see:
@@ -48,7 +48,7 @@ pip install -e .
 ## Example Usage
 
 ```python
-from firewall import Firewall, enforce, BlockedByFirewall
+from gate import Firewall, enforce, BlockedByFirewall
 
 # Initialize with policy file
 fw = Firewall(policy_path="policy.yaml", platform="my-app")

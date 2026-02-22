@@ -1,5 +1,5 @@
 import tempfile
-from firewall import Firewall
+from gate import Firewall
 
 def write_policy(content: str) -> str:
     f = tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yaml")
