@@ -125,6 +125,12 @@ All tests verify fail-closed behavior and deterministic enforcement.
 
 ---
 
+## Examples
+
+See `examples/` for runnable scripts, including a minimal agent demo.
+
+---
+
 ## License
 
 MIT
