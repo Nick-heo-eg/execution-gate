@@ -11,8 +11,8 @@ This library enforces deterministic ALLOW/BLOCK decisions before any side-effect
 ## Quickstart (60 seconds)
 
 ```bash
-git clone https://github.com/Nick-heo-eg/ai-execution-firewall.git
-cd ai-execution-firewall
+git clone https://github.com/Nick-heo-eg/execution-gate.git
+cd execution-gate
 pip install -e .
 firewall-demo
 ```
