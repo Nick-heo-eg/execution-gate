@@ -48,13 +48,13 @@ pip install -e .
 ## Example Usage
 
 ```python
-from gate import Firewall, enforce, BlockedByFirewall
+from gate import Gate, enforce, BlockedByGate
 
 # Initialize with policy file
-fw = Firewall(policy_path="policy.yaml", platform="my-app")
+gate = Gate(policy_path="policy.yaml", platform="my-app")
 
 # Check intent manually
-decision = fw.check({
+decision = gate.check({
     "actor": "agent",
     "action": "transfer_money",
     "metadata": {"amount": 500}
@@ -63,7 +63,7 @@ decision = fw.check({
 print(decision.status)  # "ALLOW" or "BLOCK"
 
 # Or use decorator to enforce
-@enforce(fw, intent_builder=lambda amt: {
+@enforce(gate, intent_builder=lambda amt: {
     "actor": "agent",
     "action": "transfer_money",
     "metadata": {"amount": amt}
@@ -73,7 +73,7 @@ def transfer_money(amt: float):
 
 try:
     transfer_money(5000)  # Blocked if exceeds policy limit
-except BlockedByFirewall as e:
+except BlockedByGate as e:
     print(f"Blocked: {e.reason_code}")
 ```
 

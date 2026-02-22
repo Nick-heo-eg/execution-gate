@@ -1,5 +1,5 @@
-from .core import Firewall
-from .enforcement import enforce, BlockedByFirewall
+from .core import Gate
+from .enforcement import enforce, BlockedByGate
 from .decision import Decision
 
-__all__ = ["Firewall", "enforce", "BlockedByFirewall", "Decision"]
+__all__ = ["Gate", "enforce", "BlockedByGate", "Decision"]

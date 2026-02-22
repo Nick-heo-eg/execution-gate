@@ -6,7 +6,7 @@ from .decision import Decision
 from .policy import Policy, PolicyError, load_policy
 
 
-class Firewall:
+class Gate:
     """
     v0.1:
       - Decision: ALLOW/BLOCK only

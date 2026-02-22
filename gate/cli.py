@@ -4,7 +4,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from .core import Firewall
+from .core import Gate
 from .logger import emit_audit
 
 
@@ -28,7 +28,7 @@ def demo():
         print("   python -m examples.local_agent_demo")
         sys.exit(1)
 
-    fw = Firewall(
+    gate = Gate(
         policy_path=str(policy_path),
         platform="demo-cli",
         model="example",
@@ -56,14 +56,14 @@ def demo():
 
     for idx, case in enumerate(test_cases, 1):
         print(f"{idx}. {case['name']}")
-        decision = fw.check(case["intent"])
+        decision = gate.check(case["intent"])
 
         emit_audit(
             intent=case["intent"],
             decision=decision,
-            platform=fw.platform,
-            model=fw.model,
-            out_file=fw.audit_file,
+            platform=gate.platform,
+            model=gate.model,
+            out_file=gate.audit_file,
         )
 
         print(f"   Decision: {decision.status}")

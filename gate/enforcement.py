@@ -3,13 +3,13 @@ from __future__ import annotations
 from functools import wraps
 from typing import Any, Callable, Dict, Optional, TypeVar, cast
 
-from .core import Firewall
+from .core import Gate
 from .logger import emit_audit
 
 F = TypeVar("F", bound=Callable[..., Any])
 
 
-class BlockedByFirewall(RuntimeError):
+class BlockedByGate(RuntimeError):
     def __init__(self, message: str, *, decision_reason: Optional[str] = None, reason_code: Optional[str] = None) -> None:
         super().__init__(message)
         self.decision_reason = decision_reason
@@ -17,16 +17,16 @@ class BlockedByFirewall(RuntimeError):
 
 
 def enforce(
-    firewall: Firewall,
+    gate: Gate,
     *,
     intent_builder: Optional[Callable[..., Dict[str, Any]]] = None,
 ) -> Callable[[F], F]:
     """
     Decorator:
       - builds intent deterministically
-      - checks via firewall
+      - checks via gate
       - emits audit
-      - blocks by raising BlockedByFirewall
+      - blocks by raising BlockedByGate
 
     intent_builder signature:
       def intent_builder(*args, **kwargs) -> dict
@@ -40,18 +40,18 @@ def enforce(
                 "metadata": {},
             }
 
-            decision = firewall.check(intent)
+            decision = gate.check(intent)
             emit_audit(
                 intent=intent,
                 decision=decision,
-                platform=firewall.platform,
-                model=firewall.model,
-                out_file=firewall.audit_file,
+                platform=gate.platform,
+                model=gate.model,
+                out_file=gate.audit_file,
             )
 
             if decision.blocked:
-                raise BlockedByFirewall(
-                    f"Blocked by firewall: {decision.reason_code}",
+                raise BlockedByGate(
+                    f"Blocked by gate: {decision.reason_code}",
                     decision_reason=decision.reason,
                     reason_code=decision.reason_code,
                 )
