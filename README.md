@@ -1,10 +1,7 @@
 # Deterministic Execution Gate (v0.1)
 
-Minimal pre-execution control for AI agents.
-
-**LLMs are probabilistic. Production systems cannot be.**
-
-This library enforces deterministic ALLOW/BLOCK decisions before any side-effect execution.
+Most agent frameworks let execution happen by default.
+This library requires an explicit ALLOW before any side-effect runs.
 
 ---
 
