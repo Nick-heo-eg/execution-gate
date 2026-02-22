@@ -1,10 +1,13 @@
 [project]
 name = "ai-execution-firewall"
 version = "0.1.0"
-description = "Deterministic pre-execution firewall for AI agents (fail-closed, vendor-neutral)."
+description = "Deterministic pre-execution gate for AI agents (fail-closed)."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = ["pyyaml>=6.0"]
+
+[project.scripts]
+firewall-demo = "firewall.cli:main"
 
 [build-system]
 requires = ["setuptools>=69"]

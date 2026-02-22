@@ -1,22 +1,39 @@
-# Deterministic Execution Firewall (v0.1)
+# Deterministic Execution Gate (v0.1)
 
-Minimal, vendor-neutral pre-execution control for AI agents.
+Minimal pre-execution control for AI agents.
 
-LLMs are probabilistic.
-Production systems cannot be.
+**LLMs are probabilistic. Production systems cannot be.**
 
-This firewall enforces deterministic ALLOW/BLOCK decisions
-before any side-effect execution.
+This library enforces deterministic ALLOW/BLOCK decisions before any side-effect execution.
+
+---
+
+## Quickstart (60 seconds)
+
+```bash
+git clone https://github.com/Nick-heo-eg/ai-execution-firewall.git
+cd ai-execution-firewall
+pip install -e .
+firewall-demo
+```
+
+You'll see:
+- ✅ Small transfer → ALLOW
+- ❌ Large transfer → BLOCK (exceeds limit)
+- ❌ Delete database → BLOCK (explicitly denied)
+- ❌ Unknown action → BLOCK (no rule)
+
+All decisions include structured JSON audit logs.
 
 ---
 
 ## Features
 
-- Fail-closed policy engine
-- Deterministic ALLOW/BLOCK result
-- YAML-based rules
-- Structured JSON audit logs
-- Decorator-based execution enforcement
+- **Fail-closed by default**: Missing policy → BLOCK, Unknown action → BLOCK
+- **Deterministic decisions**: ALLOW or BLOCK, no probabilistic output
+- **YAML-based policy rules**: Simple, readable configuration
+- **Structured audit logging**: JSON format for observability
+- **Decorator-based enforcement**: Block execution before it happens
 
 ---
 
@@ -28,29 +45,89 @@ pip install -e .
 
 ---
 
-## Example
+## Example Usage
 
 ```python
-from firewall import Firewall
+from firewall import Firewall, enforce, BlockedByFirewall
 
-fw = Firewall(policy_path="policy.yaml")
+# Initialize with policy file
+fw = Firewall(policy_path="policy.yaml", platform="my-app")
 
+# Check intent manually
 decision = fw.check({
     "actor": "agent",
     "action": "transfer_money",
     "metadata": {"amount": 500}
 })
 
-print(decision.status)
+print(decision.status)  # "ALLOW" or "BLOCK"
+
+# Or use decorator to enforce
+@enforce(fw, intent_builder=lambda amt: {
+    "actor": "agent",
+    "action": "transfer_money",
+    "metadata": {"amount": amt}
+})
+def transfer_money(amt: float):
+    return f"Transferred: {amt}"
+
+try:
+    transfer_money(5000)  # Blocked if exceeds policy limit
+except BlockedByFirewall as e:
+    print(f"Blocked: {e.reason_code}")
+```
+
+---
+
+## Policy Example
+
+```yaml
+rules:
+  - action: delete_database
+    allowed: false
+
+  - action: transfer_money
+    max_amount: 1000
+
+  - action: send_email
+    allowed: true
 ```
 
 ---
 
 ## Safety Model
 
-* Missing policy → BLOCK
-* Unknown action → BLOCK
-* Rule violation → BLOCK
-* Explicit allow rule → ALLOW
+| Condition | Decision |
+|-----------|----------|
+| Missing policy file | BLOCK |
+| Unknown action | BLOCK |
+| Rule violation | BLOCK |
+| Explicit allow rule | ALLOW |
 
-Fail-closed by default.
+**Fail-closed by default.**
+
+---
+
+## Tests
+
+```bash
+pip install pytest
+pytest
+```
+
+All tests verify fail-closed behavior and deterministic enforcement.
+
+---
+
+## Design Principles
+
+- **Deterministic**: No LLM judgment, no probabilistic guardrails
+- **Pre-execution**: Decision happens before side-effects
+- **Observable**: Structured logs for audit and monitoring
+- **Minimal**: Single-purpose library, no framework lock-in
+
+---
+
+## License
+
+MIT
