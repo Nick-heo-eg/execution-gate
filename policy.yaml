@@ -1,0 +1,13 @@
+rules:
+  - action: delete_database
+    allowed: false
+
+  - action: transfer_money
+    max_amount: 1000
+
+  - action: shell.exec
+    allowed: false
+
+  # Default allow example (explicit)
+  - action: send_email
+    allowed: true
