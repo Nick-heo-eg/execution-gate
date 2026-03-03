@@ -1,0 +1,39 @@
+name: conformance
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ["v*"]
+
+jobs:
+  gate-conformance:
+    name: Gate Conformance (invariants, no Docker)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install gate
+        run: pip install -e .
+
+      - name: Install conformance dependencies
+        run: pip install -r conformance/requirements.txt
+
+      - name: Run conformance tests
+        run: pytest conformance/tests/ -v --tb=short
+
+      - name: Verify fixture count
+        run: |
+          for f in \
+            conformance/fixtures/decisions/allow_decision.json \
+            conformance/fixtures/decisions/deny_decision.json \
+            conformance/fixtures/decisions/deny_missing_proof.json \
+            conformance/fixtures/decisions/deny_wrong_proof.json; do
+            [ -f "$f" ] || { echo "MISSING FIXTURE: $f"; exit 1; }
+          done
+          echo "All fixtures present."

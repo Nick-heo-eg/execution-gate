@@ -1,0 +1,9 @@
+{
+  "decision_id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+  "action_id": "33333333-4444-5555-6666-777777777777",
+  "result": "DENY",
+  "reason_code": "NO_RULE",
+  "authority_token": "execution-gate/v0.2",
+  "timestamp": "2024-01-15T10:30:02+00:00",
+  "reason": "Action not allowed (no rule): unknown_action"
+}

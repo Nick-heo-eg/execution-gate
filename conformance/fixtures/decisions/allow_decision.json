@@ -1,0 +1,9 @@
+{
+  "decision_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "action_id": "11111111-2222-3333-4444-555555555555",
+  "result": "ALLOW",
+  "reason_code": "POLICY_ALLOW",
+  "authority_token": "execution-gate/v0.2",
+  "proof_hash": "4a7b9c2e1f3d8a5b6c0e9f2d4a7b9c2e1f3d8a5b6c0e9f2d4a7b9c2e1f3d8a5b",
+  "timestamp": "2024-01-15T10:30:00+00:00"
+}

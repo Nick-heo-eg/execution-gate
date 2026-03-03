@@ -1,0 +1,9 @@
+{
+  "decision_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+  "action_id": "22222222-3333-4444-5555-666666666666",
+  "result": "DENY",
+  "reason_code": "NO_RULE",
+  "authority_token": "execution-gate/v0.2",
+  "proof_hash": "5b8c0d3f2e4a9b6c7d1f0e3a5b8c0d3f2e4a9b6c7d1f0e3a5b8c0d3f2e4a9b6c",
+  "timestamp": "2024-01-15T10:30:01+00:00"
+}
