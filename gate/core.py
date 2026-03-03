@@ -1,10 +1,48 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from contextlib import contextmanager
+from typing import Any, Dict, Generator, Optional
 
 from .decision import ActionEnvelope, Decision  # noqa: F401 (re-exported)
 from .policy import Policy, PolicyError, load_policy
-from .telemetry import eb_evaluate_span, set_decision_attributes
+
+
+# ---------------------------------------------------------------------------
+# Instrumentation loader — complete isolation
+#
+# Gate NEVER depends on OTel. If anything in the instrumentation path fails
+# (import error, init error, tracer error), _load_instrumentation() returns
+# no-op stubs. The failure is silently discarded.
+#
+# Conditions covered:
+#   A. opentelemetry-api not installed          → ImportError swallowed
+#   B. tracer initialisation failure            → any Exception swallowed
+#   C. span attribute set failure               → caught inside set_decision_attributes
+#   D. context propagation / export failure     → OTel SDK handles async; never blocks
+# ---------------------------------------------------------------------------
+
+@contextmanager
+def _null_span(*_: Any, **__: Any) -> Generator[None, None, None]:
+    yield None
+
+
+def _noop(*_: Any, **__: Any) -> None:
+    return None
+
+
+def _load_instrumentation() -> tuple:
+    """
+    Returns (eb_evaluate_span, set_decision_attributes).
+    Returns no-op stubs on any failure — no exception ever escapes.
+    """
+    try:
+        from .instrumentation.otel import eb_evaluate_span, set_decision_attributes
+        return eb_evaluate_span, set_decision_attributes
+    except Exception:  # noqa: BLE001 — intentional broad catch
+        return _null_span, _noop
+
+
+_eb_evaluate_span, _set_decision_attributes = _load_instrumentation()
 
 
 class Gate:
@@ -15,6 +53,8 @@ class Gate:
       ActionEnvelope → Evaluator → Decision → Ledger → Runtime (ALLOW only)
 
     Fail-closed: any evaluation failure produces DENY.
+    OTel instrumentation is optional and fully isolated — gate behavior is
+    identical whether opentelemetry-api is installed or not.
     """
 
     def __init__(
@@ -42,15 +82,23 @@ class Gate:
         Returns Decision with result ALLOW | DENY | HOLD.
         Never executes the action.
 
-        Emits eb.evaluate OTel span if opentelemetry-api is installed.
-        eb.* attributes: eb.envelope_id, eb.decision, eb.reason_code, eb.ledger_commit, eb.proof_hash
+        Emits eb.evaluate OTel span when opentelemetry-api is installed.
+        OTel failure does not affect evaluation result.
         """
-        with eb_evaluate_span(
-            envelope_id=envelope.action_id,
-            action_type=envelope.action_type,
-        ) as span:
+        try:
+            ctx = _eb_evaluate_span(
+                envelope_id=envelope.action_id,
+                action_type=envelope.action_type,
+            )
+        except Exception:  # noqa: BLE001
+            ctx = _null_span()
+
+        with ctx as span:
             decision = self._evaluate_inner(envelope)
-            set_decision_attributes(span, decision)
+            try:
+                _set_decision_attributes(span, decision)
+            except Exception:  # noqa: BLE001
+                pass  # span attribute failure never propagates
             return decision
 
     def _evaluate_inner(self, envelope: ActionEnvelope) -> Decision:
