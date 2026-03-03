@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Nick-heo-eg/execution-boundary-core-spec/spec/decision.schema.json",
+  "$comment": "Pinned from execution-boundary-core-spec commit 47588ff. Do not modify — update by re-pinning from upstream.",
+  "title": "Decision",
+  "description": "Output of the Evaluator. Only ALLOW enables execution. Must be appended to ledger regardless of result.",
+  "type": "object",
+  "required": ["decision_id", "action_id", "result", "reason_code", "authority_token", "proof_hash", "timestamp"],
+  "additionalProperties": false,
+  "properties": {
+    "decision_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this decision."
+    },
+    "action_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Identifier of the ActionEnvelope this decision applies to."
+    },
+    "result": {
+      "type": "string",
+      "enum": ["ALLOW", "DENY", "HOLD"],
+      "description": "Evaluation outcome. Only ALLOW permits execution. DENY closes the action. HOLD requires re-evaluation."
+    },
+    "reason_code": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Machine-readable code describing the reason for this decision."
+    },
+    "authority_token": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Token identifying the authority that produced this decision."
+    },
+    "proof_hash": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Hash over decision_id + action_id + result + timestamp. Provides verifiable record of denial or approval."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of when the decision was produced."
+    }
+  }
+}

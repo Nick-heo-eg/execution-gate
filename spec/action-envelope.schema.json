@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Nick-heo-eg/execution-boundary-core-spec/spec/action-envelope.schema.json",
+  "$comment": "Pinned from execution-boundary-core-spec commit 47588ff. Do not modify — update by re-pinning from upstream.",
+  "title": "ActionEnvelope",
+  "description": "Structured representation of a proposed action. Immutable after evaluation begins.",
+  "type": "object",
+  "required": ["action_id", "action_type", "resource", "parameters", "context_hash", "timestamp"],
+  "additionalProperties": false,
+  "properties": {
+    "action_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this action instance."
+    },
+    "action_type": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Category or kind of action being proposed (e.g. 'file.write', 'network.send', 'db.delete')."
+    },
+    "resource": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Target resource identifier. Format is domain-specific."
+    },
+    "parameters": {
+      "type": "object",
+      "description": "Action-specific parameters. Structure is domain-specific."
+    },
+    "context_hash": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Hash of the execution context at proposal time. Used for integrity verification."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of when the action was proposed."
+    }
+  }
+}

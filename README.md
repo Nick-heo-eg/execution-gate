@@ -1,82 +1,81 @@
-# Deterministic Execution Gate (v0.1)
+# execution-gate (v0.2)
 
-Most agent frameworks let execution happen by default.
-This library requires an explicit ALLOW before any side-effect runs.
+Reference implementation of [Execution Boundary Core Spec v0.1](https://github.com/Nick-heo-eg/execution-boundary-core-spec) (commit: `47588ff`).
+
+Execution does not occur by default. An explicit `ALLOW` decision is required before any side-effect runs.
 
 ---
 
-## Quickstart (60 seconds)
+## Spec Conformance
+
+| Core Spec requirement | Status |
+|---|---|
+| ActionEnvelope (action_id, context_hash) | ✓ |
+| Evaluator — side-effect free | ✓ |
+| Decision (decision_id, result, authority_token, proof_hash) | ✓ |
+| result: ALLOW \| DENY \| HOLD | ✓ |
+| Ledger append — DENY recorded | ✓ |
+| Fail-closed on evaluator failure | ✓ |
+| Runtime executes only on ALLOW | ✓ |
+
+Schema reference: [`spec/`](https://github.com/Nick-heo-eg/execution-boundary-core-spec/tree/main/spec)
+
+---
+
+## Quickstart
 
 ```bash
 git clone https://github.com/Nick-heo-eg/execution-gate.git
 cd execution-gate
 pip install -e .
-gate-demo
-```
-
-You'll see:
-- ✅ Small transfer → ALLOW
-- ❌ Large transfer → BLOCK (exceeds limit)
-- ❌ Delete database → BLOCK (explicitly denied)
-- ❌ Unknown action → BLOCK (no rule)
-
-All decisions include structured JSON audit logs.
-
----
-
-## Features
-
-- **Fail-closed by default**: Missing policy → BLOCK, Unknown action → BLOCK
-- **Deterministic decisions**: ALLOW or BLOCK, no probabilistic output
-- **YAML-based policy rules**: Simple, readable configuration
-- **Structured audit logging**: JSON format for observability
-- **Decorator-based enforcement**: Block execution before it happens
-
----
-
-## Install
-
-```bash
-pip install -e .
 ```
 
 ---
 
-## Example Usage
+## Usage
+
+### Envelope + Evaluate (explicit flow)
+
+```python
+from gate import Gate, ActionEnvelope
+
+gate = Gate(policy_path="policy.yaml", platform="my-app")
+
+envelope = ActionEnvelope.build(
+    action_type="transfer_money",
+    resource="bank/account",
+    parameters={"amount": 500},
+)
+
+decision = gate.evaluate(envelope)
+print(decision.result)        # "ALLOW" or "DENY"
+print(decision.proof_hash)    # SHA-256 verifiable record
+print(decision.decision_id)   # UUID
+```
+
+### Decorator enforcement
 
 ```python
 from gate import Gate, enforce, BlockedByGate
 
-# Initialize with policy file
 gate = Gate(policy_path="policy.yaml", platform="my-app")
 
-# Check intent manually
-decision = gate.check({
-    "actor": "agent",
-    "action": "transfer_money",
-    "metadata": {"amount": 500}
-})
-
-print(decision.status)  # "ALLOW" or "BLOCK"
-
-# Or use decorator to enforce
 @enforce(gate, intent_builder=lambda amt: {
-    "actor": "agent",
     "action": "transfer_money",
-    "metadata": {"amount": amt}
+    "metadata": {"amount": amt},
 })
 def transfer_money(amt: float):
     return f"Transferred: {amt}"
 
 try:
-    transfer_money(5000)  # Blocked if exceeds policy limit
+    transfer_money(5000)
 except BlockedByGate as e:
-    print(f"Blocked: {e.reason_code}")
+    print(e.reason_code)  # "AMOUNT_EXCEEDS_LIMIT"
 ```
 
 ---
 
-## Policy Example
+## Policy
 
 ```yaml
 rules:
@@ -92,42 +91,51 @@ rules:
 
 ---
 
-## Safety Model
+## Decision Output
+
+Every evaluation produces a Decision object conforming to Core Spec:
+
+```json
+{
+  "decision_id": "uuid",
+  "action_id": "uuid",
+  "result": "DENY",
+  "reason_code": "AMOUNT_EXCEEDS_LIMIT",
+  "authority_token": "execution-gate/v0.2",
+  "proof_hash": "sha256...",
+  "timestamp": "2026-03-03T00:00:00+00:00"
+}
+```
+
+DENY decisions are recorded in the ledger. Absence of execution is provable.
+
+---
+
+## Fail-Closed Behavior
 
 | Condition | Decision |
-|-----------|----------|
-| Missing policy file | BLOCK |
-| Unknown action | BLOCK |
-| Rule violation | BLOCK |
-| Explicit allow rule | ALLOW |
-
-**Fail-closed by default.**
+|---|---|
+| Policy file missing | DENY (`POLICY_UNAVAILABLE`) |
+| Unknown action | DENY (`NO_RULE`) |
+| Rule violation | DENY (`DENY_RULE` / `AMOUNT_EXCEEDS_LIMIT`) |
+| Explicit allow rule met | ALLOW |
 
 ---
 
 ## Tests
 
 ```bash
-pip install pytest
-pytest
+pytest tests/
 ```
 
-All tests verify fail-closed behavior and deterministic enforcement.
-
 ---
 
-## Design Principles
+## Design
 
-- **Deterministic**: No LLM judgment, no probabilistic guardrails
-- **Pre-execution**: Decision happens before side-effects
-- **Observable**: Structured logs for audit and monitoring
-- **Minimal**: Single-purpose library, no framework lock-in
-
----
-
-## Examples
-
-See `examples/` for runnable scripts, including a minimal agent demo.
+- Evaluator is a pure function — no side-effects, no execution
+- Decision is immutable once produced
+- Ledger append is unconditional — DENY entries included
+- Runtime blocked unless `decision.result == "ALLOW"`
 
 ---
 
