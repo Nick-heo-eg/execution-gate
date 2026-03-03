@@ -10,6 +10,26 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ---
 
+## [0.3.0] - 2026-03-04
+
+### Added
+- `gate/telemetry.py` — optional OTel integration (no-op without `opentelemetry-api`)
+- `Gate.evaluate()` emits `eb.evaluate` OTel span with `eb.*` semantic conventions
+- `eb.envelope_id`, `eb.decision`, `eb.reason_code`, `eb.ledger_commit`, `eb.proof_hash` attributes per observability pattern spec
+- `_evaluate_inner()` extracted — pure evaluation logic separated from observability concerns
+- `[otel]` optional dependency group: `opentelemetry-api/sdk/exporter-otlp-proto-grpc>=1.24.0`
+- `eb.ledger.append` span context manager in telemetry module
+
+### Changed
+- `pyproject.toml` version bumped to `0.3.0`
+
+### Notes
+- OTel is fully optional. Gate behavior is identical with or without `opentelemetry-api` installed.
+- Standard OTel env vars apply: `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_SERVICE_NAME`
+- Install: `pip install execution-gate[otel]`
+
+---
+
 ## [0.2.0] - 2026-03-03
 
 ### Added
@@ -18,29 +38,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - `DENY` replaces `BLOCK` — conforms to Core Spec state model
 - Pinned `spec/action-envelope.schema.json` and `spec/decision.schema.json` from core-spec commit `47588ff`
 - `SECURITY.md` — private vulnerability disclosure via GitHub Advisories
-- `CONTRIBUTING.md` — layer ownership gate before PR
-
-### Changed
-- `evaluate(envelope)` replaces `check()` as primary interface (`check()` retained as compatibility wrapper)
-- `Ledger` now records structured `envelope + decision` entries
-- README aligned to Core Spec conformance table
-
-### Internal
-- `proof_hash` computed as `SHA-256(decision_id + action_id + result + timestamp)`
-- All decisions — ALLOW and DENY — appended to ledger unconditionally
 
 ---
 
-## [0.1.0] - 2026-02-22
+## [0.1.0] - 2026-02-20
 
 ### Added
-- `Gate` class: deterministic fail-closed evaluation
-- YAML policy engine: `max_amount`, `blocked_actions`, `require_confirmation`
-- `ActionEnvelope` proposal object
-- `BlockedByGate` exception on DENY
-- CLI demo: `gate-demo`
-- Example: `examples/simple_agent.py` — before/after boundary pattern
+- Initial release: `Gate`, `enforce()` decorator, `BlockedByGate` exception
+- Fail-closed: evaluator failure → DENY
+- YAML policy with `max_amount` and `allowed` rules
+- `emit_audit()` — structured JSON audit log (ALLOW and DENY)
+- `gate-demo` CLI entry point
 
-### Changed
-- Renamed `Firewall` → `Gate` throughout (`BlockedByFirewall` → `BlockedByGate`)
-- README reframed: problem-solution structure, concrete behavior first
