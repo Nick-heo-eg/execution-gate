@@ -1,4 +1,4 @@
-# execution-gate (v0.2)
+# execution-gate (v0.3)
 
 Reference implementation of [Execution Boundary Core Spec v0.1](https://github.com/Nick-heo-eg/execution-boundary-core-spec) (commit: `47588ff`).
 
@@ -101,7 +101,7 @@ Every evaluation produces a Decision object conforming to Core Spec:
   "action_id": "uuid",
   "result": "DENY",
   "reason_code": "AMOUNT_EXCEEDS_LIMIT",
-  "authority_token": "execution-gate/v0.2",
+  "authority_token": "execution-gate/v0.3",
   "proof_hash": "sha256...",
   "timestamp": "2026-03-03T00:00:00+00:00"
 }
@@ -122,6 +122,30 @@ DENY decisions are recorded in the ledger. Absence of execution is provable.
 
 ---
 
+## Observability (optional)
+
+`evaluate()` emits `eb.evaluate` OTel spans when `opentelemetry-api` is installed.
+Gate behavior is identical without it — instrumentation is a no-op if OTel is absent.
+
+```bash
+pip install execution-gate[otel]
+```
+
+Attributes emitted per decision:
+
+| Attribute | Values |
+|---|---|
+| `eb.decision` | `ALLOW` / `DENY` / `HOLD` |
+| `eb.reason_code` | e.g. `AMOUNT_EXCEEDS_LIMIT`, `NO_RULE` |
+| `eb.ledger_commit` | `true` / `false` |
+| `eb.proof_hash` | first 8 chars of SHA-256 |
+| `eb.envelope_id` | UUID (span attribute only — not a metric label) |
+
+Collector topology, tail sampling policy, dashboards, and alerts:
+→ [execution-observability-profile](https://github.com/Nick-heo-eg/execution-observability-profile)
+
+---
+
 ## Tests
 
 ```bash
@@ -136,6 +160,7 @@ pytest tests/
 - Decision is immutable once produced
 - Ledger append is unconditional — DENY entries included
 - Runtime blocked unless `decision.result == "ALLOW"`
+- OTel instrumentation isolated in `gate/instrumentation/` — never imported by core evaluation path
 
 ---
 
