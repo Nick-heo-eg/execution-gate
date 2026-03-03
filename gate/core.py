@@ -4,6 +4,7 @@ from typing import Any, Dict, Optional
 
 from .decision import ActionEnvelope, Decision  # noqa: F401 (re-exported)
 from .policy import Policy, PolicyError, load_policy
+from .telemetry import eb_evaluate_span, set_decision_attributes
 
 
 class Gate:
@@ -40,7 +41,20 @@ class Gate:
         Deterministic evaluation. Side-effect free.
         Returns Decision with result ALLOW | DENY | HOLD.
         Never executes the action.
+
+        Emits eb.evaluate OTel span if opentelemetry-api is installed.
+        eb.* attributes: eb.envelope_id, eb.decision, eb.reason_code, eb.ledger_commit, eb.proof_hash
         """
+        with eb_evaluate_span(
+            envelope_id=envelope.action_id,
+            action_type=envelope.action_type,
+        ) as span:
+            decision = self._evaluate_inner(envelope)
+            set_decision_attributes(span, decision)
+            return decision
+
+    def _evaluate_inner(self, envelope: ActionEnvelope) -> Decision:
+        """Pure evaluation logic. No observability concerns."""
         policy = self._load_policy_fail_closed()
         if policy is None:
             return Decision.deny(
