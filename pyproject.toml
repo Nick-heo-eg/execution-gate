@@ -1,10 +1,17 @@
 [project]
 name = "execution-gate"
-version = "0.1.0"
+version = "0.2.0"
 description = "Deterministic pre-execution gate for AI agents (fail-closed)."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = ["pyyaml>=6.0"]
+
+[project.optional-dependencies]
+otel = [
+    "opentelemetry-api>=1.24.0",
+    "opentelemetry-sdk>=1.24.0",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.24.0",
+]
 
 [project.scripts]
 gate-demo = "gate.cli:main"
