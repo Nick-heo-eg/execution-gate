@@ -5,6 +5,8 @@ from typing import Any, Dict, Generator, Optional
 
 from .decision import ActionEnvelope, Decision  # noqa: F401 (re-exported)
 from .policy import Policy, PolicyError, load_policy
+from .instruction_normalizer import normalize as _normalize_instruction
+from .context_integrity import check as _check_context_integrity
 
 
 # ---------------------------------------------------------------------------
@@ -103,6 +105,48 @@ class Gate:
 
     def _evaluate_inner(self, envelope: ActionEnvelope) -> Decision:
         """Pure evaluation logic. No observability concerns."""
+
+        # ── Policy Adapter: instruction normalizer ───────────────────────────
+        _raw_instruction = (
+            envelope.parameters.get("instruction")
+            or envelope.parameters.get("description")
+            or ""
+        )
+        if _raw_instruction:
+            _ni = _normalize_instruction(_raw_instruction)
+            if _ni.pre_gate_hint == "DENY":
+                return Decision.deny(
+                    envelope.action_id,
+                    f"Policy adapter: explicit deny pattern — {_ni.deny_pattern}",
+                    reason_code="EXPLICIT_DENY",
+                )
+            if _ni.ambiguity_detected:
+                try:
+                    _p = load_policy(self.policy_path)
+                    _amb_rule = _p.find_rule("ambiguous_instruction")
+                except Exception:
+                    _amb_rule = None
+                if _amb_rule and _amb_rule.hold:
+                    return Decision.hold(
+                        envelope.action_id,
+                        f"Policy adapter: ambiguous instruction — {_ni.ambiguous_terms}",
+                        reason_code="AMBIGUOUS_INSTRUCTION",
+                    )
+
+        # ── Context Integrity Check ──────────────────────────────────────────
+        _ctx_map = envelope.parameters.get("context")
+        if isinstance(_ctx_map, dict):
+            _integrity = _check_context_integrity(
+                _ctx_map,
+                skip_keys=envelope.parameters.get("context_integrity_skip", []),
+            )
+            if _integrity.severity_level in {"CRITICAL", "HIGH", "MEDIUM"}:
+                return Decision.hold(
+                    envelope.action_id,
+                    f"Context integrity: {_integrity.reason}",
+                    reason_code=f"CONTEXT_INTEGRITY_{_integrity.severity_level}",
+                )
+
         policy = self._load_policy_fail_closed()
         if policy is None:
             return Decision.deny(
@@ -117,6 +161,13 @@ class Gate:
                 envelope.action_id,
                 f"Action not allowed (no rule): {envelope.action_type}",
                 reason_code="NO_RULE",
+            )
+
+        if rule.hold is True:
+            return Decision.hold(
+                envelope.action_id,
+                f"Action requires explicit approval: {envelope.action_type}",
+                reason_code="HOLD_RULE",
             )
 
         if rule.allowed is False:

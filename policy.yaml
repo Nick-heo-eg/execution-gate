@@ -8,6 +8,43 @@ rules:
   - action: shell.exec
     allowed: false
 
-  # Default allow example (explicit)
   - action: send_email
     allowed: true
+
+  - action: read_file
+    allowed: true
+
+  - action: code.write
+    allowed: true
+
+  - action: git.local
+    allowed: true
+
+  - action: test.run
+    allowed: true
+
+  - action: doc.write
+    allowed: true
+
+  - action: repo.create
+    allowed: true
+
+  # HOLD — external / deployment / side-effects
+  - action: service.deploy
+    hold: true
+
+  - action: git.push
+    hold: true
+
+  - action: package.install
+    hold: true
+
+  - action: external.api.call
+    hold: true
+
+  - action: db.write
+    hold: true
+
+  # ambiguous_instruction: Policy Adapter → HOLD
+  - action: ambiguous_instruction
+    hold: true

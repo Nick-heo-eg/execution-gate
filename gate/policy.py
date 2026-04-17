@@ -15,6 +15,7 @@ class Rule:
     action: str
     allowed: Optional[bool] = None
     max_amount: Optional[float] = None
+    hold: Optional[bool] = None
 
 
 @dataclass(frozen=True)
@@ -72,6 +73,10 @@ def load_policy(path: str) -> Policy:
         if max_amount is not None and not isinstance(max_amount, (int, float)):
             raise PolicyError(f"Rule[{idx}] 'max_amount' must be number if present")
 
-        rules.append(Rule(action=action.strip(), allowed=allowed, max_amount=float(max_amount) if max_amount is not None else None))
+        hold = rr.get("hold")
+        if hold is not None and not isinstance(hold, bool):
+            raise PolicyError(f"Rule[{idx}] 'hold' must be boolean if present")
+
+        rules.append(Rule(action=action.strip(), allowed=allowed, max_amount=float(max_amount) if max_amount is not None else None, hold=hold))
 
     return Policy(rules=rules)
