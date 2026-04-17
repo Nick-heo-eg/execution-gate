@@ -7,6 +7,7 @@ from .decision import ActionEnvelope, Decision  # noqa: F401 (re-exported)
 from .policy import Policy, PolicyError, load_policy
 from .instruction_normalizer import normalize as _normalize_instruction
 from .context_integrity import check as _check_context_integrity
+from .impact_resolver import resolve as _resolve_impact
 
 
 # ---------------------------------------------------------------------------
@@ -105,6 +106,50 @@ class Gate:
 
     def _evaluate_inner(self, envelope: ActionEnvelope) -> Decision:
         """Pure evaluation logic. No observability concerns."""
+
+        # ── Impact Resolver (telemetry → judgment input) ─────────────────────
+        # envelope.parameters에 "impact" 키가 있으면 Impact Resolver 결과로 해석.
+        # 없으면 skip (기존 호환).
+        # impact dict 직접 전달 또는 metrics dict 전달 두 가지 모두 지원.
+        _impact_params = envelope.parameters.get("impact")
+        if isinstance(_impact_params, dict):
+            # 이미 resolve된 ImpactResult dict이면 직접 사용
+            _impact_level   = _impact_params.get("impact_level", "NONE")
+            _impact_hold    = _impact_params.get("should_hold", False)
+            _impact_reason  = _impact_params.get("hold_reason", "")
+            _traffic_ratio  = _impact_params.get("traffic_ratio", 1.0)
+            _deploy_related = _impact_params.get("deploy_related", False)
+        else:
+            # metrics dict이면 resolve() 호출
+            _metrics = envelope.parameters.get("metrics")
+            if isinstance(_metrics, dict):
+                _ir = _resolve_impact(
+                    error_rate    = float(_metrics.get("error_rate", 0.0)),
+                    latency_p95   = float(_metrics.get("latency_p95", 0.0)),
+                    latency_base  = _metrics.get("latency_base"),
+                    traffic_ratio = float(_metrics.get("traffic_ratio", 1.0)),
+                    error_scope   = str(_metrics.get("error_scope", "global")),
+                    deploy_event  = bool(_metrics.get("deploy_event", False)),
+                )
+                _impact_level   = _ir.impact_level
+                _impact_hold    = _ir.should_hold
+                _impact_reason  = _ir.hold_reason
+                _traffic_ratio  = float(_metrics.get("traffic_ratio", 1.0))
+                _deploy_related = _ir.deploy_related
+            else:
+                _impact_level = "NONE"
+                _impact_hold  = False
+                _impact_reason = ""
+                _traffic_ratio = 1.0
+                _deploy_related = False
+
+        if _impact_hold:
+            return Decision.hold(
+                envelope.action_id,
+                f"Impact resolver: {_impact_reason}",
+                reason_code=f"IMPACT_{_impact_level}",
+            )
+        # ── End Impact Resolver ──────────────────────────────────────────────
 
         # ── Policy Adapter: instruction normalizer ───────────────────────────
         _raw_instruction = (
