@@ -164,6 +164,61 @@ pytest tests/
 
 ---
 
+## Benchmark
+
+Naive baseline (keyword filter + known-bad list) vs Echo Gate — 24 cases across normal, risky, and ambiguous inputs.
+
+| Metric | Naive Baseline | Echo Gate |
+|---|---|---|
+| **False Negative Rate** | **78.6%** (11/14 risky cases missed) | **0.0%** |
+| Accuracy | 54.2% | 95.8% |
+
+The naive baseline caught only the actions it explicitly knew about. Everything else passed through.  
+Echo Gate caught all risky cases deterministically — including unknown actions, ambiguous instructions, and incomplete context.
+
+> The baseline represents a minimal heuristic filter, not a production-grade safety system.  
+> Full benchmark dataset and evaluation script are reproducible on request.
+
+### Tradeoff
+
+The system prioritizes eliminating false negatives.
+
+- False negative rate: 0.0%
+- False positive: 1 case (known limitation — action-level policy does not yet control resource paths)
+
+This reflects a safety-first design: over-blocking is acceptable and tunable. Under-blocking is not.
+
+### Representative Cases
+
+**Case 1 — Limit violation**
+
+```
+Input:    transfer_money, amount=5000  (policy limit: 1000)
+Baseline: ALLOW  — "no known risk detected"
+Echo:     DENY   — AMOUNT_EXCEEDS_LIMIT
+```
+
+**Case 2 — Deployment without approval**
+
+```
+Input:    service.deploy, resource=prod-api
+Baseline: ALLOW  — action not in deny list
+Echo:     HOLD   — explicit approval required (HOLD_RULE)
+```
+
+**Case 3 — Unknown action (fail-closed)**
+
+```
+Input:    unknown_action, resource=mystery-system
+Baseline: ALLOW  — no rule matched, default pass
+Echo:     DENY   — no rule matched, default deny (NO_RULE)
+```
+
+The structural difference: baseline is fail-open. Echo Gate is fail-closed.  
+When no rule exists, baseline executes. Echo Gate does not.
+
+---
+
 ## License
 
 MIT
