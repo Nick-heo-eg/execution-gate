@@ -123,13 +123,15 @@ class Gate:
             # metrics dict이면 resolve() 호출
             _metrics = envelope.parameters.get("metrics")
             if isinstance(_metrics, dict):
+                _sustained = _metrics.get("sustained_seconds")
                 _ir = _resolve_impact(
-                    error_rate    = float(_metrics.get("error_rate", 0.0)),
-                    latency_p95   = float(_metrics.get("latency_p95", 0.0)),
-                    latency_base  = _metrics.get("latency_base"),
-                    traffic_ratio = float(_metrics.get("traffic_ratio", 1.0)),
-                    error_scope   = str(_metrics.get("error_scope", "global")),
-                    deploy_event  = bool(_metrics.get("deploy_event", False)),
+                    error_rate        = float(_metrics.get("error_rate", 0.0)),
+                    latency_p95       = float(_metrics.get("latency_p95", 0.0)),
+                    latency_base      = _metrics.get("latency_base"),
+                    traffic_ratio     = float(_metrics.get("traffic_ratio", 1.0)),
+                    error_scope       = str(_metrics.get("error_scope", "global")),
+                    deploy_event      = bool(_metrics.get("deploy_event", False)),
+                    sustained_seconds = int(_sustained) if _sustained is not None else None,
                 )
                 _impact_level   = _ir.impact_level
                 _impact_hold    = _ir.should_hold
