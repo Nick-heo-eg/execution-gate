@@ -48,3 +48,45 @@ rules:
   # ambiguous_instruction: Policy Adapter → HOLD
   - action: ambiguous_instruction
     hold: true
+
+  # invest domain actions
+  - action: invest.order.execute
+    allowed: true
+
+  - action: invest.order.blocked
+    allowed: false
+
+  # daily gate actions — life decisions
+  - action: daily.purchase
+    allowed: true
+
+  - action: daily.schedule
+    allowed: true
+
+  - action: daily.message.send
+    allowed: true
+
+  - action: daily.travel
+    allowed: true
+
+  - action: daily.parenting
+    allowed: true
+
+  # daily gate — flagged signals → HOLD
+  - action: daily.purchase.impulse
+    hold: true
+
+  - action: daily.message.emotional
+    hold: true
+
+  - action: daily.message.emotional.critical
+    allowed: false
+
+  - action: daily.schedule.overload
+    hold: true
+
+  - action: daily.travel.risky
+    hold: true
+
+  - action: daily.parenting.overstimulated
+    hold: true
