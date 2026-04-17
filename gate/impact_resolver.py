@@ -145,8 +145,24 @@ def resolve(
         signals.append("DEPLOY_RELATED: recent deploy detected (cause tag, not risk multiplier)")
 
     # ── Gate 연결: should_hold 결정 ───────────────────────────────────────────
-    # 이 로직은 Gate core.py가 소유해도 되지만,
-    # convenience 신호로 여기서도 제공 (Gate가 override 가능)
+    # HOLD 분기 (명시적 4개):
+    #
+    #   1. CRITICAL → 무조건 HOLD
+    #
+    #   2. HIGH + traffic_ratio > 0.5 → HOLD
+    #      이유: 트래픽 절반 이상이 영향받고 있음
+    #
+    #   3. HIGH + deploy_related → HOLD
+    #      이유: 배포와 동시 이상 → 원인 확인 전 실행 차단
+    #
+    #   4. HIGH + error_scope == global → HOLD
+    #      이유: global 장애인데 HIGH면 즉시 차단
+    #      (CRITICAL 조건은 global + error>0.05. global + error 0.01~0.05는 HIGH에 머무름)
+    #
+    #   미해당 HIGH (통과):
+    #      traffic_ratio ≤ 0.5 + deploy 없음 + partial/endpoint scope
+    #      → 영향 범위 제한적, 의도적 통과 (monitor 권장)
+    #
     if result.impact_level == "CRITICAL":
         result.should_hold = True
         result.hold_reason = f"Impact CRITICAL — {'; '.join(s for s in signals if 'CRITICAL' in s)}"
@@ -156,6 +172,12 @@ def resolve(
     elif result.impact_level == "HIGH" and result.deploy_related:
         result.should_hold = True
         result.hold_reason = f"Impact HIGH + deploy_related"
+    elif result.impact_level == "HIGH" and error_scope == "global" and error_rate > 0.05:
+        result.should_hold = True
+        result.hold_reason = f"Impact HIGH + global error scope (error_rate={error_rate:.1%})"
+    # else: HIGH지만 traffic 낮고 deploy 없고 partial/endpoint scope → 통과 (의도적)
+    #       signals에 기록되므로 외부에서 모니터링 가능
+    # 참고: global scope라도 error_rate ≤ 0.05면 LOW → 통과 (global은 CRITICAL 조건에서 이미 처리됨)
 
     result.signals = signals
     result.confidence = round(confidence, 3)
