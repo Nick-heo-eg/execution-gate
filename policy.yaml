@@ -105,17 +105,35 @@ rules:
     allowed: true
 
   # 4M change request domain (ax-ops)
+  # 위험 신호 있음 → HOLD
   - action: 4m_change_request_material_MP
     hold: true
-
-  - action: 4m_change_request_material_DEV
-    allowed: true
 
   - action: 4m_change_request_machine_MP
     hold: true
 
+  - action: 4m_change_request_method_MP
+    hold: true
+
+  # 위험 신호 없음 (_clear) → ALLOW
+  - action: 4m_change_request_material_MP_clear
+    allowed: true
+
+  - action: 4m_change_request_machine_MP_clear
+    allowed: true
+
+  - action: 4m_change_request_method_MP_clear
+    allowed: true
+
+  # DEV 단계 → 기본 ALLOW
+  - action: 4m_change_request_material_DEV
+    allowed: true
+
+  - action: 4m_change_request_machine_DEV
+    allowed: true
+
   - action: 4m_change_request_man_MP
     allowed: true
 
-  - action: 4m_change_request_method_MP
-    hold: true
+  - action: 4m_change_request_man_DEV
+    allowed: true
