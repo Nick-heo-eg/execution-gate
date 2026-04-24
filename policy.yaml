@@ -90,3 +90,32 @@ rules:
 
   - action: daily.parenting.overstimulated
     hold: true
+
+  # SCM / procurement domain
+  - action: scm.po.approve
+    allowed: true
+
+  - action: scm.po.approve.high_risk
+    hold: true
+
+  - action: scm.po.reject
+    allowed: true
+
+  - action: exec_proof_v1
+    allowed: true
+
+  # 4M change request domain (ax-ops)
+  - action: 4m_change_request_material_MP
+    hold: true
+
+  - action: 4m_change_request_material_DEV
+    allowed: true
+
+  - action: 4m_change_request_machine_MP
+    hold: true
+
+  - action: 4m_change_request_man_MP
+    allowed: true
+
+  - action: 4m_change_request_method_MP
+    hold: true
